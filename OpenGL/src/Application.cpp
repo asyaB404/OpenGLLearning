@@ -60,10 +60,13 @@ int main(void)
 
 	👉 非常慢！几乎每一帧都得把数据重新交给 GPU。*/
 	// 创建一个缓冲区对象（VBO：Vertex Buffer Object）
-	unsigned int buffer;
+	unsigned int buffer; 
 	glGenBuffers(1, &buffer); // 生成一个缓冲区 ID
 	glBindBuffer(GL_ARRAY_BUFFER, buffer); // 绑定为当前数组缓冲
 	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), postions, GL_STATIC_DRAW); // 传入顶点数据
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+
 
 	/* 渲染循环：直到窗口被关闭 */
 	while (!glfwWindowShouldClose(window))
