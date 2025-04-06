@@ -2,6 +2,51 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <string>
+#include <fstream>
+#include <sstream>
+
+struct ShaderProgramSource
+{
+	std::string VertexSource;
+    std::string FragmentSource;
+};
+
+static ShaderProgramSource ParesShader(const std::string& filepath)
+{
+    std::ifstream stream(filepath);
+
+	enum class ShaderType
+	{
+        NONE = -1,
+        VERTEX = 0,
+        FRAGMENT = 1
+	};
+
+    std::string line;
+	std::stringstream ss[2];
+    ShaderType type = ShaderType::NONE;
+    while (std::getline(stream, line))
+    {
+        if (line.find("#shader") != std::string::npos)
+        {
+            if (line.find("vertex") != std::string::npos)
+            {
+                type = ShaderType::VERTEX;
+            }
+            else if (line.find("fragment") != std::string::npos)
+            {
+                type = ShaderType::FRAGMENT;
+            }
+        }
+        else
+        {
+			ss[(int)type] << line << '\n';
+        }
+    }
+
+	return { ss[0].str(), ss[1].str() };
+}
 
 static unsigned int CompileShader(unsigned int type, const std::string& source)
 {
@@ -105,7 +150,7 @@ int main(void)
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 
-    std::string vertexShader = R"(
+    /*std::string vertexShader = R"(
         #version 330 core
         layout(location = 0) in vec4 position;
         void main()
@@ -121,8 +166,14 @@ int main(void)
         {
             color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
         }
-    )";
-    unsigned int shader = CreateShader(vertexShader, fragmentShader);
+    )";*/
+    
+	ShaderProgramSource source = ParesShader("OpenGL/res/shaders/Basic.shader");
+    std::string vertexShader = source.VertexSource;
+    std::string fragmentShader = source.FragmentSource;
+	std::cout << vertexShader << std::endl;
+	std::cout << fragmentShader << std::endl;
+	unsigned int shader = CreateShader(vertexShader, fragmentShader);
     glUseProgram(shader);
 
 
