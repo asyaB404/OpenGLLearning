@@ -6,6 +6,26 @@
 #include <fstream>
 #include <sstream>
 
+#define ASSERT(x) if (!(x)) __debugbreak();
+#define GLCall(x) GLClearError();\
+    x;\
+    ASSERT(GLLogCall(#x,__FILE__,__LINE__))
+
+static void GLClearError()
+{
+    while (glGetError() != GL_NO_ERROR);
+}
+
+static bool GLLogCall(const char* function, const char* file, int line)
+{
+    while (GLenum error = glGetError())
+    {
+        std::cout << "[OpenGL Error] (" << error << "): " << function << " " << file << ":" << line << std::endl;
+        return false;
+    }
+    return true;
+}
+
 // ShaderProgramSource 结构体存储从文件读取的着色器代码
 struct ShaderProgramSource
 {
@@ -158,18 +178,18 @@ int main(void)
     👉 非常慢！几乎每一帧都得把数据重新交给 GPU。*/
     // 创建一个缓冲区对象（VBO：Vertex Buffer Object）
     unsigned int buffer;
-	glGenBuffers(1, &buffer); // 生成一个缓冲区 ID
-    glBindBuffer(GL_ARRAY_BUFFER, buffer); // 绑定为当前数组缓冲
-	glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), postions, GL_STATIC_DRAW); // 传入顶点数据
+	GLCall(glGenBuffers(1, &buffer);) // 生成一个缓冲区 ID
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer)); // 绑定为当前数组缓冲
+    GLCall(glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), postions, GL_STATIC_DRAW)); // 传入顶点数据
 
     // 启用顶点属性数组（此处为位置数据）
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+    GLCall(glEnableVertexAttribArray(0));
+    GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0));
 
     unsigned int ibo;
-    glGenBuffers(1, &ibo); 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); 
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6  * sizeof(unsigned int), indices, GL_STATIC_DRAW);
+    GLCall(glGenBuffers(1, &ibo));
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
+    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6  * sizeof(unsigned int), indices, GL_STATIC_DRAW));
 
     // 从着色器文件中加载顶点和片段着色器代码
     ShaderProgramSource source = ParesShader("OpenGL/res/shaders/Basic.shader");
@@ -188,7 +208,7 @@ int main(void)
         // 清除颜色缓冲（用来清空屏幕）
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
         // 交换前后缓冲（将绘制结果显示到屏幕）
         glfwSwapBuffers(window);
