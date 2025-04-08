@@ -136,6 +136,8 @@ int main(void)
     // 设置当前上下文为新创建的窗口
     glfwMakeContextCurrent(window);
 
+    glfwSwapInterval(1);
+
     // 初始化 GLEW（需要在 OpenGL 上下文之后初始化）
     if (glewInit() != GLEW_OK)
         std::cout << "Error initializing GLEW" << std::endl;
@@ -193,14 +195,17 @@ int main(void)
 
     // 从着色器文件中加载顶点和片段着色器代码
     ShaderProgramSource source = ParesShader("OpenGL/res/shaders/Basic.shader");
-    std::string vertexShader = source.VertexSource;
-    std::string fragmentShader = source.FragmentSource;
-    std::cout << vertexShader << std::endl;  // 打印顶点着色器代码
-    std::cout << fragmentShader << std::endl;  // 打印片段着色器代码
 
     // 创建着色器程序并使用它
-    unsigned int shader = CreateShader(vertexShader, fragmentShader);
-    glUseProgram(shader);
+    unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
+    GLCall(glUseProgram(shader));
+
+    GLCall(int location = glGetUniformLocation(shader, "u_Color"));
+    ASSERT(location != -1);
+    GLCall(glUniform4f(location, 0.5f, 0.3f, 0.8f, 1.0f));
+
+    float r = 0.0f;
+    float increment = 0.05f;
 
     // 渲染循环：直到窗口被关闭
     while (!glfwWindowShouldClose(window))
@@ -208,7 +213,15 @@ int main(void)
         // 清除颜色缓冲（用来清空屏幕）
         glClear(GL_COLOR_BUFFER_BIT);
 
+        GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
         GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+
+        if (r > 1.0f)
+            increment = -0.05f;
+        else if (r < 0.0f)
+            increment = 0.05f;
+
+        r += increment;
 
         // 交换前后缓冲（将绘制结果显示到屏幕）
         glfwSwapBuffers(window);
