@@ -5,26 +5,10 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include "Renderer.h"
 
-#define ASSERT(x) if (!(x)) __debugbreak();
-#define GLCall(x) GLClearError();\
-    x;\
-    ASSERT(GLLogCall(#x,__FILE__,__LINE__))
-
-static void GLClearError()
-{
-    while (glGetError() != GL_NO_ERROR);
-}
-
-static bool GLLogCall(const char* function, const char* file, int line)
-{
-    while (GLenum error = glGetError())
-    {
-        std::cout << "[OpenGL Error] (" << error << "): " << function << " " << file << ":" << line << std::endl;
-        return false;
-    }
-    return true;
-}
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
 
 // ShaderProgramSource 结构体存储从文件读取的着色器代码
 struct ShaderProgramSource
@@ -158,6 +142,10 @@ int main(void)
         2, 3, 0
     };
 
+    unsigned int vao;
+    GLCall(glGenVertexArrays(1,&vao));
+    GLCall(glBindVertexArray(vao));
+
     /*
     我们来一步步深入浅出地解释：
     为什么要用 缓冲区（Buffer）？OpenGL 为什么不能直接画？这和“恶魔”（现代图形卡）的工作原理有关 😈
@@ -178,20 +166,16 @@ int main(void)
     不保存 → 不缓存 → 不优化。
 
     👉 非常慢！几乎每一帧都得把数据重新交给 GPU。*/
-    // 创建一个缓冲区对象（VBO：Vertex Buffer Object）
-    unsigned int buffer;
-	GLCall(glGenBuffers(1, &buffer);) // 生成一个缓冲区 ID
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer)); // 绑定为当前数组缓冲
-    GLCall(glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), postions, GL_STATIC_DRAW)); // 传入顶点数据
+    
+    
+    VertexBuffer vb(postions, 4 * 2 * sizeof(float));
+
 
     // 启用顶点属性数组（此处为位置数据）
     GLCall(glEnableVertexAttribArray(0));
     GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0));
 
-    unsigned int ibo;
-    GLCall(glGenBuffers(1, &ibo));
-    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
-    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6  * sizeof(unsigned int), indices, GL_STATIC_DRAW));
+    IndexBuffer ib(indices, 6);
 
     // 从着色器文件中加载顶点和片段着色器代码
     ShaderProgramSource source = ParesShader("OpenGL/res/shaders/Basic.shader");
@@ -204,6 +188,11 @@ int main(void)
     ASSERT(location != -1);
     GLCall(glUniform4f(location, 0.5f, 0.3f, 0.8f, 1.0f));
 
+    GLCall(glBindVertexArray(0));
+    GLCall(glUseProgram(0));
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+
     float r = 0.0f;
     float increment = 0.05f;
 
@@ -213,7 +202,12 @@ int main(void)
         // 清除颜色缓冲（用来清空屏幕）
         glClear(GL_COLOR_BUFFER_BIT);
 
+        GLCall(glUseProgram(shader));
         GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
+        GLCall(glBindVertexArray(vao));
+        
+        ib.Bind();
+
         GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
         if (r > 1.0f)
