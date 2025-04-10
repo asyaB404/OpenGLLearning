@@ -101,10 +101,14 @@
     <ClCompile Include="OpenGL\src\IndexBuffer.cpp" />
     <ClCompile Include="OpenGL\src\Renderer.cpp" />
     <ClCompile Include="OpenGL\src\VertexBuffer.cpp" />
+    <ClCompile Include="OpenGL\src\VertexArray.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="OpenGL\src\IndexBuffer.h" />
     <ClInclude Include="OpenGL\src\Renderer.h" />
+    <ClInclude Include="OpenGL\src\VertexArray.h" />
+    <ClInclude Include="OpenGL\src\VertexBuffer.h" />
+    <ClInclude Include="OpenGL\src\VertexBufferLayout.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

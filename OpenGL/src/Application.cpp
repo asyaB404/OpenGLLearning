@@ -9,6 +9,7 @@
 
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "VertexArray.h"
 
 // ShaderProgramSource 结构体存储从文件读取的着色器代码
 struct ShaderProgramSource
@@ -128,105 +129,83 @@ int main(void)
 
     // 输出当前使用的 OpenGL 版本
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
-
-    // 三角形的顶点坐标（2D）
-    float postions[] = {
-        -0.5f, -0.5f, // Left bottom
-         0.5f, -0.5f, // Right bottom
-         0.5f,  0.5f, // Right top
-        -0.5f,  0.5f  // Left top
-    };
-
-    unsigned int indices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
-
-    unsigned int vao;
-    GLCall(glGenVertexArrays(1,&vao));
-    GLCall(glBindVertexArray(vao));
-
-    /*
-    我们来一步步深入浅出地解释：
-    为什么要用 缓冲区（Buffer）？OpenGL 为什么不能直接画？这和“恶魔”（现代图形卡）的工作原理有关 😈
-
-    🧠 一、为什么需要「缓冲」？
-    在最早的 OpenGL（称为 Immediate Mode，即时模式）中，我们可以这样直接画图：
-
-  
-    glBegin(GL_TRIANGLES);
-    glVertex2f(-0.5f, -0.5f);
-    glVertex2f(0.0f, 0.5f);
-    glVertex2f(0.5f, -0.5f);
-    glEnd();
-    这种方式：
-
-    写一点 → 画一点。
-
-    不保存 → 不缓存 → 不优化。
-
-    👉 非常慢！几乎每一帧都得把数据重新交给 GPU。*/
-    
-    
-    VertexBuffer vb(postions, 4 * 2 * sizeof(float));
-
-
-    // 启用顶点属性数组（此处为位置数据）
-    GLCall(glEnableVertexAttribArray(0));
-    GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0));
-
-    IndexBuffer ib(indices, 6);
-
-    // 从着色器文件中加载顶点和片段着色器代码
-    ShaderProgramSource source = ParesShader("OpenGL/res/shaders/Basic.shader");
-
-    // 创建着色器程序并使用它
-    unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
-    GLCall(glUseProgram(shader));
-
-    GLCall(int location = glGetUniformLocation(shader, "u_Color"));
-    ASSERT(location != -1);
-    GLCall(glUniform4f(location, 0.5f, 0.3f, 0.8f, 1.0f));
-
-    GLCall(glBindVertexArray(0));
-    GLCall(glUseProgram(0));
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
-    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-
-    float r = 0.0f;
-    float increment = 0.05f;
-
-    // 渲染循环：直到窗口被关闭
-    while (!glfwWindowShouldClose(window))
     {
-        // 清除颜色缓冲（用来清空屏幕）
-        glClear(GL_COLOR_BUFFER_BIT);
+        // 三角形的顶点坐标（2D）
+        float postions[] = {
+            -0.5f, -0.5f, // Left bottom
+             0.5f, -0.5f, // Right bottom
+             0.5f,  0.5f, // Right top
+            -0.5f,  0.5f  // Left top
+        };
 
-        GLCall(glUseProgram(shader));
-        GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
+        unsigned int indices[] = {
+            0, 1, 2,
+            2, 3, 0
+        };
+
+        unsigned int vao;
+        GLCall(glGenVertexArrays(1, &vao));
         GLCall(glBindVertexArray(vao));
-        
-        ib.Bind();
+        VertexArray va;
+        VertexBuffer vb(postions, 4 * 2 * sizeof(float));
 
-        GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+        VertexBufferLayout layout;
+        layout.Push<float>(2);
+        va.AddBuffer(vb, layout);
 
-        if (r > 1.0f)
-            increment = -0.05f;
-        else if (r < 0.0f)
-            increment = 0.05f;
+        IndexBuffer ib(indices, 6);
 
-        r += increment;
+        // 从着色器文件中加载顶点和片段着色器代码
+        ShaderProgramSource source = ParesShader("OpenGL/res/shaders/Basic.shader");
 
-        // 交换前后缓冲（将绘制结果显示到屏幕）
-        glfwSwapBuffers(window);
+        // 创建着色器程序并使用它
+        unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
+        GLCall(glUseProgram(shader));
 
-        // 处理事件（如键盘、鼠标等输入）
-        glfwPollEvents();
+        GLCall(int location = glGetUniformLocation(shader, "u_Color"));
+        ASSERT(location != -1);
+        GLCall(glUniform4f(location, 0.5f, 0.3f, 0.8f, 1.0f));
+
+        GLCall(glBindVertexArray(0));
+        GLCall(glUseProgram(0));
+        GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+        GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+
+        float r = 0.0f;
+        float increment = 0.05f;
+
+        // 渲染循环：直到窗口被关闭
+        while (!glfwWindowShouldClose(window))
+        {
+            // 清除颜色缓冲（用来清空屏幕）
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            GLCall(glUseProgram(shader));
+            GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
+
+            GLCall(glBindVertexArray(vao));
+            va.Bind();
+            ib.Bind();
+
+            GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+
+            if (r > 1.0f)
+                increment = -0.05f;
+            else if (r < 0.0f)
+                increment = 0.05f;
+
+            r += increment;
+
+            // 交换前后缓冲（将绘制结果显示到屏幕） 
+            glfwSwapBuffers(window);
+
+            // 处理事件（如键盘、鼠标等输入）
+            glfwPollEvents();
+        }
+
+        // 删除着色器程序
+        GLCall(glDeleteProgram(shader));
     }
-
-    // 删除着色器程序
-    glDeleteProgram(shader);
-
     // 清理资源，关闭 GLFW
     glfwTerminate();
     return 0;
